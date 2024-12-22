@@ -11,50 +11,63 @@ const location_not_found = document.querySelector(".location-not-found");
 const weather_body = document.querySelector(".weather-body");
 
 async function checkWeather(city) {
-  const api_key = "d67b322dfac2a6c88d3a51c654ce7ebd";
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=searchBtn&appid=api_key`;
+  const api_key = "d67b322dfac2a6c88d3a51c654ce7ebd"; // Make sure this is your correct API key
+  // Use the city value instead of "searchBtn" and replace api_key with the actual key value
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${api_key}`;
 
-  const weather_data = await fetch(`${url}`).then((response) =>
-    response.json()
-  );
-
-  if (weather_data.cod === `404`) {
-    location_not_found.style.display = "flex";
+  try {
+    const weather_data = await fetch(url);
+    
+    // If the response is not OK (e.g., 401 error), throw an error
+    if (!weather_data.ok) {
+      throw new Error("City not found or invalid API key");
+    }
+    
+    const data = await weather_data.json();
+    
+    // Handle successful response and update the UI
+    if (data.cod === 200) {
+      weather_body.style.display = "block";
+      location_not_found.style.display = "none";
+      
+      // Update the UI elements with data
+      temperature.innerHTML = `${Math.round(data.main.temp - 273.15)}°C`; // Convert from Kelvin to Celsius
+      description.innerHTML = data.weather[0].description;
+      humidity.innerHTML = `${data.main.humidity}%`;
+      wind_speed.innerHTML = `${data.wind.speed} m/s`;
+      
+      // Set the weather icon
+      const weatherIcon = `http://openweathermap.org/img/wn/${data.weather[0].icon}.png`;
+      weather_img.src = weatherIcon;
+    } else {
+      location_not_found.style.display = "block";
+      weather_body.style.display = "none";
+    }
+  } catch (error) {
+    location_not_found.style.display = "block";
     weather_body.style.display = "none";
-    console.log("error");
-    return;
+    console.error(error);
   }
-
-  console.log("run");
-  location_not_found.style.display = "none";
-  weather_body.style.display = "flex";
-  temperature.innerHTML = `${Math.round(weather_data.main.temp - 273.15)}°C`;
-  description.innerHTML = `${weather_data.weather[0].description}`;
-
-  humidity.innerHTML = `${weather_data.main.humidity}%`;
-  wind_speed.innerHTML = `${weather_data.wind.speed}Km/H`;
-
-  switch (weather_data.weather[0].main) {
-    case "Clouds":
-      weather_img.src = "assets/cloud.png";
-      break;
-    case "Clear":
-      weather_img.src = "assets/clear.png";
-      break;
-    case "Rain":
-      weather_img.src = "assets/rain.png";
-      break;
-    case "Mist":
-      weather_img.src = "assets/mist.png";
-      break;
-    case "Snow":
-      weather_img.src = "assets/snow.png";
-      break;
-  }
-
-  console.log(weather_data);
 }
 
+// Search button click handler
 searchBtn.addEventListener("click", () => {
-  checkWeather(inputBox.value);
+  const city = inputBox.value.trim();
+  if (city) {
+    checkWeather(city);
+  } else {
+    alert("Please enter a city name.");
+  }
+});
+
+// Optional: Add an event listener for the 'Enter' key press
+inputBox.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    const city = inputBox.value.trim();
+    if (city) {
+      checkWeather(city);
+    } else {
+      alert("Please enter a city name.");
+    }
+  }
 });
